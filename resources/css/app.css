@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+    .atu-page {
+        @apply bg-[#f4f7fc] py-8;
+    }
+
+    .atu-panel {
+        @apply overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-gray-200/80;
+    }
+
+    .atu-panel-header {
+        @apply border-b border-[#dbe5f6] bg-[#edf3ff] px-5 py-4;
+    }
+
+    .atu-panel-title {
+        @apply text-base font-semibold text-[#274f93];
+    }
+
+    .atu-card {
+        @apply rounded-md bg-gray-50 px-4 py-3 ring-1 ring-gray-200/70;
+    }
+
+    .atu-primary {
+        @apply inline-flex items-center justify-center rounded-md bg-[#355da8] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#2f5192] focus:outline-none focus:ring-2 focus:ring-[#355da8] focus:ring-offset-2;
+    }
+
+    .atu-secondary {
+        @apply inline-flex items-center justify-center rounded-md border border-[#dbe5f6] bg-white px-4 py-2 text-sm font-medium text-[#355da8] shadow-sm transition hover:bg-[#f4f7fc] hover:text-[#2f5192] focus:outline-none focus:ring-2 focus:ring-[#355da8] focus:ring-offset-2;
+    }
+
+    .atu-input {
+        @apply rounded-md border-gray-300 text-sm shadow-sm focus:border-[#355da8] focus:ring-[#355da8];
+    }
+
+    .atu-table-head {
+        @apply bg-[#edf3ff] text-left text-[#274f93];
+    }
+}
