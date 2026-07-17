@@ -11,7 +11,7 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         $this->seedUser(
-            ['email' => 'admin@example.com'],
+            ['email' => 'admin@atu.kz'],
             [
                 'name' => 'Администратор',
                 'iin' => '900101000001',
@@ -21,7 +21,7 @@ class UserSeeder extends Seeder
         );
 
         $this->seedUser(
-            ['email' => 'psychologist@example.com'],
+            ['email' => 'psychologist@atu.kz'],
             [
                 'name' => 'Психолог СПП',
                 'iin' => '900101000002',
@@ -31,7 +31,7 @@ class UserSeeder extends Seeder
         );
 
         $this->seedUser(
-            ['email' => 'ddm@example.com'],
+            ['email' => 'ddm@atu.kz'],
             [
                 'name' => 'Сотрудник ДДМ',
                 'iin' => '900101000003',
@@ -41,7 +41,7 @@ class UserSeeder extends Seeder
         );
 
         $this->seedUser(
-            ['email' => 'student@example.com'],
+            ['email' => 'student@atu.kz'],
             [
                 'name' => 'Студент ATU',
                 'iin' => '060101000004',
