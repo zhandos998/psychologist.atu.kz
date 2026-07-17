@@ -70,12 +70,6 @@ class TestScoringService
             'interpretation' => $this->serializeInterpretation($interpretation),
         ];
 
-        if ($attempt->test->type === 'mood_meter') {
-            $answer = $attempt->answers->first();
-            $payload['mood_score'] = $answer ? (float) $answer->score : null;
-            $payload['mood_value'] = $answer?->value;
-        }
-
         return $payload;
     }
 
@@ -98,19 +92,38 @@ class TestScoringService
         foreach ($scales as $scale => $score) {
             $interpretation = $this->findInterpretation($attempt->test->interpretations, $scale, $score);
             $isHighRisk = $isHighRisk || (bool) $interpretation?->is_high_risk;
+            $score = round($score, 2);
 
             $scaleResults[$scale] = [
-                'score' => round($score, 2),
+                'label' => $this->scaleLabel($config, $scale),
+                'score' => $score,
                 'interpretation' => $this->serializeInterpretation($interpretation),
             ];
         }
 
-        return [
+        $scaleResults = $this->sortScaleResults($scaleResults, $config);
+        $matchedScale = ($config['match_highest_scale'] ?? false)
+            ? $this->highestScale($scaleResults)
+            : null;
+        $matchedScore = $matchedScale ? $scaleResults[$matchedScale]['score'] : null;
+        $matchedInterpretation = $matchedScale
+            ? $this->findInterpretation($attempt->test->interpretations, $matchedScale, $matchedScore)
+            : null;
+
+        $payload = [
             'method' => 'scale_based',
-            'total_score' => round(array_sum($scales), 2),
-            'is_high_risk' => $isHighRisk,
+            'total_score' => $matchedScale ? $matchedScore : round(array_sum($scales), 2),
+            'is_high_risk' => $isHighRisk || (bool) $matchedInterpretation?->is_high_risk,
             'scales' => $scaleResults,
         ];
+
+        if ($matchedScale) {
+            $payload['matched_type'] = $matchedScale;
+            $payload['matched_label'] = $scaleResults[$matchedScale]['label'] ?? $matchedScale;
+            $payload['interpretation'] = $this->serializeInterpretation($matchedInterpretation);
+        }
+
+        return $payload;
     }
 
     private function maxMatchType(TestAttempt $attempt): array
@@ -184,13 +197,26 @@ class TestScoringService
             $matchedType,
             max(1, $extroversion + $introversion + $neuroticism)
         );
+        $scaleResults = collect($scales)
+            ->map(function ($score, $scale) use ($attempt, $config) {
+                $score = round($score, 2);
+
+                return [
+                    'label' => $this->scaleLabel($config, $scale),
+                    'score' => $score,
+                    'interpretation' => $this->serializeInterpretation(
+                        $this->findInterpretation($attempt->test->interpretations, $scale, $score)
+                    ),
+                ];
+            })
+            ->all();
 
         return [
             'method' => 'trait_matrix_type',
             'total_score' => round(array_sum($scales), 2),
             'is_high_risk' => false,
             'matched_type' => $matchedType,
-            'scales' => collect($scales)->map(fn ($score) => ['score' => round($score, 2)])->all(),
+            'scales' => $this->sortScaleResults($scaleResults, $config),
             'interpretation' => $this->serializeInterpretation($interpretation),
         ];
     }
@@ -224,6 +250,56 @@ class TestScoringService
             ->filter()
             ->values()
             ->all();
+    }
+
+    private function scaleLabel(array $config, string $scale): string
+    {
+        $meta = $config['scales'][$scale] ?? null;
+
+        if (is_string($meta) && $meta !== '') {
+            return $meta;
+        }
+
+        if (is_array($meta)) {
+            $locale = app()->getLocale();
+
+            return $meta['translations'][$locale]['label']
+                ?? $meta['label']
+                ?? $meta['name']
+                ?? $scale;
+        }
+
+        return $config['scale_labels'][$scale] ?? $scale;
+    }
+
+    private function sortScaleResults(array $scaleResults, array $config): array
+    {
+        uksort($scaleResults, function (string $leftScale, string $rightScale) use ($config) {
+            $leftOrder = $config['scales'][$leftScale]['order'] ?? null;
+            $rightOrder = $config['scales'][$rightScale]['order'] ?? null;
+
+            return (($leftOrder ?? PHP_INT_MAX) <=> ($rightOrder ?? PHP_INT_MAX))
+                ?: ($leftScale <=> $rightScale);
+        });
+
+        return $scaleResults;
+    }
+
+    private function highestScale(array $scaleResults): ?string
+    {
+        $winner = null;
+        $winnerScore = null;
+
+        foreach ($scaleResults as $scale => $result) {
+            $score = (float) ($result['score'] ?? 0);
+
+            if ($winner === null || $score > $winnerScore) {
+                $winner = $scale;
+                $winnerScore = $score;
+            }
+        }
+
+        return $winner;
     }
 
     private function findInterpretation(Collection $interpretations, ?string $scaleName, float|int|null $score): ?ResultInterpretation

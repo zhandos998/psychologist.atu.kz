@@ -28,6 +28,11 @@ return [
         'key' => env('RESEND_KEY'),
     ],
 
+    'spp_api' => [
+        'token' => env('SPP_API_TOKEN'),
+        'role' => env('SPP_API_ROLE', 'admin'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

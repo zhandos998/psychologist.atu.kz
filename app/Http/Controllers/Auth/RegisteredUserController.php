@@ -31,15 +31,20 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
-        ]);
+        $request->validate(
+            [
+                'name' => 'required|string|max:255',
+                'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
+                'iin' => ['required', 'string', 'regex:/^\d{12}$/', 'unique:'.User::class],
+                'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            ],
+            $this->validationMessages()
+        );
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
+            'iin' => $request->iin,
             'password' => Hash::make($request->password),
         ]);
 
@@ -48,5 +53,21 @@ class RegisteredUserController extends Controller
         Auth::login($user);
 
         return redirect(route('dashboard', absolute: false));
+    }
+
+    private function validationMessages(): array
+    {
+        return match (app()->getLocale()) {
+            'kk' => [
+                'iin.required' => 'ЖСН міндетті.',
+                'iin.regex' => 'ЖСН 12 цифрдан тұруы керек.',
+                'iin.unique' => 'Бұл ЖСН тіркелген.',
+            ],
+            default => [
+                'iin.required' => 'ИИН обязателен.',
+                'iin.regex' => 'ИИН должен состоять из 12 цифр.',
+                'iin.unique' => 'Этот ИИН уже зарегистрирован.',
+            ],
+        };
     }
 }

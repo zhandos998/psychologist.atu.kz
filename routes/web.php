@@ -37,13 +37,16 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::middleware(['auth', 'role:admin,psychologist'])->prefix('admin')->name('admin.')->group(function () {
-    Route::resource('tests', AdminTestController::class)->except(['show']);
+    Route::resource('tests', AdminTestController::class)->only(['index', 'create', 'store']);
 });
 
 Route::middleware(['auth', 'role:admin,psychologist,ddm_staff'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/results', [ResultController::class, 'index'])->name('results.index');
     Route::get('/results/export.csv', [ResultController::class, 'exportCsv'])->name('results.export.csv');
-    Route::get('/results/export.xls', [ResultController::class, 'exportExcel'])->name('results.export.xls');
+    Route::get('/results/export.xlsx', [ResultController::class, 'exportXlsx'])->name('results.export.xlsx');
+    Route::get('/results/tests/{test}', [ResultController::class, 'showTest'])->name('results.tests.show');
+    Route::get('/results/tests/{test}/export.csv', [ResultController::class, 'exportTestCsv'])->name('results.tests.export.csv');
+    Route::get('/results/tests/{test}/export.xlsx', [ResultController::class, 'exportTestXlsx'])->name('results.tests.export.xlsx');
 });
 
 require __DIR__.'/auth.php';

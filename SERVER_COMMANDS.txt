@@ -1,0 +1,269 @@
+Команды для сервера psychologist.atu.kz
+=======================================
+
+Проект работает в Docker-контейнерах:
+- app: PHP-FPM Laravel
+- queue: Laravel queue worker
+- nginx: внутренний nginx контейнера
+- db: MySQL 8.4
+- phpmyadmin: доступ через https://psychologist.atu.kz/phpmyadmin/
+
+Папка проекта:
+
+/opt/apps/psychologist.atu.kz
+
+Порты на сервере:
+- сайт: 127.0.0.1:8113
+- phpMyAdmin: 127.0.0.1:8114
+
+
+1. Подключиться к серверу
+-------------------------
+
+ssh zhagparovr@172.20.252.171
+
+cd /opt/apps/psychologist.atu.kz
+
+
+2. Первый запуск
+----------------
+
+Создать docker.env из примера:
+
+cp docker.env.example docker.env
+nano docker.env
+
+Обязательно заполнить:
+
+APP_KEY=base64:...
+DOCKER_DB_PASSWORD=...
+DOCKER_DB_ROOT_PASSWORD=...
+MAIL_HOST=...
+MAIL_USERNAME=...
+MAIL_PASSWORD=...
+SPP_API_TOKEN=...
+
+Собрать и запустить контейнеры:
+
+docker compose --env-file docker.env up -d --build
+
+Применить миграции:
+
+docker compose --env-file docker.env exec -T app php artisan migrate --force
+
+Заполнить тесты и стартовых пользователей:
+
+docker compose --env-file docker.env exec -T app php artisan db:seed --force
+
+Внимание: стартовые пользователи создаются с паролем password.
+После первого входа обязательно сменить пароли.
+
+Собрать кеши Laravel:
+
+docker compose --env-file docker.env exec -T app php artisan optimize:clear
+docker compose --env-file docker.env exec -T app php artisan config:cache
+docker compose --env-file docker.env exec -T app php artisan route:cache
+docker compose --env-file docker.env exec -T app php artisan view:cache
+
+
+3. Обычное обновление проекта
+-----------------------------
+
+cd /opt/apps/psychologist.atu.kz
+
+git status --short
+git pull --ff-only origin main
+
+docker compose --env-file docker.env up -d --build
+docker compose --env-file docker.env exec -T app php artisan migrate --force
+docker compose --env-file docker.env exec -T app php artisan db:seed --force
+docker compose --env-file docker.env exec -T app php artisan optimize:clear
+docker compose --env-file docker.env exec -T app php artisan config:cache
+docker compose --env-file docker.env exec -T app php artisan route:cache
+docker compose --env-file docker.env exec -T app php artisan view:cache
+docker compose --env-file docker.env exec -T app php artisan queue:restart
+
+Сидер безопасен для текущей базы:
+- не удаляет прохождения тестов;
+- не сбрасывает пароли существующих пользователей;
+- не дублирует варианты ответов.
+
+
+4. Docker-команды
+-----------------
+
+Статус контейнеров:
+
+docker compose --env-file docker.env ps
+
+Логи приложения:
+
+docker compose --env-file docker.env logs -f app
+
+Логи очереди:
+
+docker compose --env-file docker.env logs -f queue
+
+Логи nginx контейнера:
+
+docker compose --env-file docker.env logs -f nginx
+
+Логи MySQL:
+
+docker compose --env-file docker.env logs -f db
+
+Перезапуск:
+
+docker compose --env-file docker.env restart app queue nginx
+
+Остановить:
+
+docker compose --env-file docker.env stop
+
+Запустить:
+
+docker compose --env-file docker.env up -d
+
+
+5. phpMyAdmin
+-------------
+
+Адрес:
+
+https://psychologist.atu.kz/phpmyadmin/
+
+Логин и пароль MySQL посмотреть на сервере:
+
+grep '^DOCKER_DB_DATABASE=' docker.env
+grep '^DOCKER_DB_USERNAME=' docker.env
+grep '^DOCKER_DB_PASSWORD=' docker.env
+
+Обычно:
+
+Server: db
+Username: значение DOCKER_DB_USERNAME
+Password: значение DOCKER_DB_PASSWORD
+
+
+6. MySQL через консоль
+----------------------
+
+Подключиться:
+
+docker compose --env-file docker.env exec db mysql -u psychologist_atu -p psychologist_atu
+
+Если имя базы/пользователь отличаются:
+
+grep '^DOCKER_DB_DATABASE=' docker.env
+grep '^DOCKER_DB_USERNAME=' docker.env
+
+Полезные SQL:
+
+show tables;
+select count(*) from users;
+select count(*) from tests;
+select count(*) from test_attempts;
+
+
+7. Бэкап базы MySQL
+-------------------
+
+Скрипт:
+
+scripts/backup-database.sh
+
+Ручной запуск:
+
+bash scripts/backup-database.sh
+
+Файлы сохраняются:
+
+backups/mysql/
+
+Скрипт хранит последние 14 файлов и удаляет более старые.
+
+Cron каждый день в 03:25:
+
+25 3 * * * cd /opt/apps/psychologist.atu.kz && /usr/bin/env bash scripts/backup-database.sh >> /opt/apps/psychologist.atu.kz/storage/logs/db-backup.log 2>&1
+
+Посмотреть бэкапы:
+
+ls -lh backups/mysql/
+
+Посмотреть лог:
+
+tail -n 100 storage/logs/db-backup.log
+
+Восстановить из бэкапа:
+
+gunzip -c backups/mysql/psychologist_atu_YYYYMMDD_HHMMSS.sql.gz | docker compose --env-file docker.env exec -T db sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mysql -u "$MYSQL_USER" "$MYSQL_DATABASE"'
+
+Внимание: восстановление перезаписывает текущую базу.
+
+
+8. Проверка сайта
+-----------------
+
+Проверить домен:
+
+curl -I https://psychologist.atu.kz/
+
+Проверить health route:
+
+curl -I https://psychologist.atu.kz/up
+
+Проверить локальный nginx контейнера:
+
+curl -I http://127.0.0.1:8113/
+
+Проверить phpMyAdmin:
+
+curl -I https://psychologist.atu.kz/phpmyadmin/
+
+
+9. API по ИИН
+-------------
+
+Токен хранится в docker.env:
+
+grep '^SPP_API_TOKEN=' docker.env
+
+Пример:
+
+curl -H "X-API-TOKEN: TOKEN" \
+  "https://psychologist.atu.kz/api/students/980915300671/test-results"
+
+С вопросами и ответами:
+
+curl -H "X-API-TOKEN: TOKEN" \
+  "https://psychologist.atu.kz/api/students/980915300671/test-results?include_questions=1&include_answers=1"
+
+
+10. Nginx на хосте
+------------------
+
+Конфиг хоста должен проксировать:
+- / -> http://127.0.0.1:8113
+- /phpmyadmin/ -> http://127.0.0.1:8114/
+
+Проверить nginx:
+
+sudo nginx -t
+sudo systemctl reload nginx
+
+
+11. Нельзя делать без бэкапа
+----------------------------
+
+Не запускать на проде:
+
+docker compose --env-file docker.env exec -T app php artisan migrate:fresh --seed --force
+
+Эта команда удаляет все данные: пользователей, ответы, прохождения и результаты.
+
+Не менять APP_KEY после запуска сайта.
+
+Не коммитить:
+- docker.env
+- .env
+- реальные пароли и токены

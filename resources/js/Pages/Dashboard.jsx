@@ -1,4 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { formatDateTime } from '@/lib/dates';
+import { useI18n } from '@/lib/i18n';
 import { Head, Link } from '@inertiajs/react';
 
 export default function Dashboard({
@@ -8,15 +10,17 @@ export default function Dashboard({
     canManageTests,
     canViewResults,
 }) {
+    const { locale, t } = useI18n();
+
     return (
         <AuthenticatedLayout
             header={
                 <h2 className="text-xl font-semibold leading-tight text-[#274f93]">
-                    Панель
+                    {t('dashboard.title')}
                 </h2>
             }
         >
-            <Head title="Панель" />
+            <Head title={t('dashboard.title')} />
 
             <div className="atu-page">
                 <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
@@ -24,24 +28,22 @@ export default function Dashboard({
                         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                             <div>
                                 <div className="text-sm font-medium text-blue-100">
-                                    СПП ATU
+                                    {t('dashboard.heroEyebrow')}
                                 </div>
                                 <h3 className="mt-2 text-2xl font-semibold">
-                                    Кабинет психологического сопровождения
+                                    {t('dashboard.heroTitle')}
                                 </h3>
                                 <p className="mt-2 max-w-2xl text-sm leading-6 text-blue-50">
-                                    Тесты, социальные анкеты, мониторинг
-                                    настроения и журнал результатов в едином
-                                    рабочем интерфейсе.
+                                    {t('dashboard.heroText')}
                                 </p>
                             </div>
                             <div className="grid gap-3 sm:grid-cols-2">
                                 <HeroStat
-                                    label="Назначено"
+                                    label={t('dashboard.assigned')}
                                     value={stats.required_pending}
                                 />
                                 <HeroStat
-                                    label="Высокий риск"
+                                    label={t('dashboard.highRisk')}
                                     value={stats.high_risk_attempts}
                                 />
                             </div>
@@ -49,17 +51,20 @@ export default function Dashboard({
                     </section>
 
                     <div className="grid gap-4 md:grid-cols-4">
-                        <Metric label="Доступно" value={stats.available_tests} />
                         <Metric
-                            label="Обязательные"
+                            label={t('dashboard.available')}
+                            value={stats.available_tests}
+                        />
+                        <Metric
+                            label={t('dashboard.requiredPending')}
                             value={stats.required_pending}
                         />
                         <Metric
-                            label="Пройдено"
+                            label={t('dashboard.completedAttempts')}
                             value={stats.completed_attempts}
                         />
                         <Metric
-                            label="Высокий риск"
+                            label={t('dashboard.highRisk')}
                             value={stats.high_risk_attempts}
                         />
                     </div>
@@ -68,24 +73,24 @@ export default function Dashboard({
                         <div className="atu-panel-header flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <h3 className="atu-panel-title">
-                                    Обязательные тесты
+                                    {t('dashboard.requiredTests')}
                                 </h3>
                                 <p className="text-sm text-gray-500">
-                                    Невыполненные назначения для текущей роли.
+                                    {t('dashboard.requiredHint')}
                                 </p>
                             </div>
                             <Link
                                 href={route('tests.index')}
                                 className="atu-primary"
                             >
-                                Все тесты
+                                {t('dashboard.allTests')}
                             </Link>
                         </div>
 
                         <div className="divide-y divide-gray-100 px-6 py-2">
                             {requiredTests.length === 0 && (
                                 <div className="py-5 text-sm text-gray-500">
-                                    Нет обязательных тестов.
+                                    {t('dashboard.noRequired')}
                                 </div>
                             )}
                             {requiredTests.map((test) => (
@@ -99,14 +104,15 @@ export default function Dashboard({
                                         </div>
                                         <div className="text-sm text-gray-500">
                                             {test.category || test.type} ·{' '}
-                                            {test.questions_count} вопросов
+                                            {test.questions_count}{' '}
+                                            {t('common.questions')}
                                         </div>
                                     </div>
                                     <Link
                                         href={route('tests.show', test.id)}
                                         className="atu-secondary"
                                     >
-                                        Пройти
+                                        {t('dashboard.take')}
                                     </Link>
                                 </div>
                             ))}
@@ -116,7 +122,7 @@ export default function Dashboard({
                     <section className="atu-panel">
                         <div className="atu-panel-header flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <h3 className="atu-panel-title">
-                                Последние результаты
+                                {t('dashboard.recentResults')}
                             </h3>
                             <div className="flex gap-2">
                                 {canManageTests && (
@@ -124,7 +130,7 @@ export default function Dashboard({
                                         href={route('admin.tests.index')}
                                         className="atu-secondary px-3 py-2"
                                     >
-                                        Конструктор
+                                        {t('nav.builder')}
                                     </Link>
                                 )}
                                 {canViewResults && (
@@ -132,7 +138,7 @@ export default function Dashboard({
                                         href={route('admin.results.index')}
                                         className="atu-secondary px-3 py-2"
                                     >
-                                        Журнал
+                                        {t('dashboard.journal')}
                                     </Link>
                                 )}
                             </div>
@@ -143,16 +149,16 @@ export default function Dashboard({
                                 <thead>
                                     <tr className="text-left text-[#274f93]">
                                         <th className="py-2 pr-4 font-medium">
-                                            Тест
+                                            {t('common.test')}
                                         </th>
                                         <th className="py-2 pr-4 font-medium">
-                                            Балл
+                                            {t('common.score')}
                                         </th>
                                         <th className="py-2 pr-4 font-medium">
-                                            Риск
+                                            {t('common.risk')}
                                         </th>
                                         <th className="py-2 pr-4 font-medium">
-                                            Дата
+                                            {t('common.date')}
                                         </th>
                                     </tr>
                                 </thead>
@@ -163,15 +169,20 @@ export default function Dashboard({
                                                 {attempt.test.title}
                                             </td>
                                             <td className="py-3 pr-4 text-gray-700">
-                                                {attempt.total_score ?? '—'}
+                                                {attempt.total_score ??
+                                                    t('common.dash')}
                                             </td>
                                             <td className="py-3 pr-4">
                                                 <RiskBadge
                                                     risk={attempt.is_high_risk}
+                                                    t={t}
                                                 />
                                             </td>
                                             <td className="py-3 pr-4 text-gray-500">
-                                                {attempt.finished_at}
+                                                {formatDateTime(
+                                                    attempt.finished_at,
+                                                    locale,
+                                                )}
                                             </td>
                                         </tr>
                                     ))}
@@ -207,7 +218,7 @@ function HeroStat({ label, value }) {
     );
 }
 
-function RiskBadge({ risk }) {
+function RiskBadge({ risk, t }) {
     return (
         <span
             className={
@@ -217,7 +228,7 @@ function RiskBadge({ risk }) {
                     : 'bg-emerald-100 text-emerald-700')
             }
         >
-            {risk ? 'Высокий' : 'Нет'}
+            {risk ? t('common.highRisk') : t('common.none')}
         </span>
     );
 }

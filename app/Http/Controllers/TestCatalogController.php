@@ -21,7 +21,7 @@ class TestCatalogController extends Controller
         $tests = Test::query()
             ->withCount('questions')
             ->where('is_active', true)
-            ->whereIn('type', ['psychology', 'social_survey', 'mood_meter'])
+            ->whereIn('type', ['psychology', 'social_survey'])
             ->orderByDesc('is_required')
             ->orderBy('type')
             ->orderBy('title')
@@ -39,7 +39,7 @@ class TestCatalogController extends Controller
         return Inertia::render('Tests/Index', [
             'tests' => $tests,
             'filters' => [
-                'types' => ['psychology', 'social_survey', 'mood_meter'],
+                'types' => ['psychology', 'social_survey'],
             ],
         ]);
     }

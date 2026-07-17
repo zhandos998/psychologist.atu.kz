@@ -1,8 +1,10 @@
 import PrimaryButton from '@/Components/PrimaryButton';
 import GuestLayout from '@/Layouts/GuestLayout';
+import { useI18n } from '@/lib/i18n';
 import { Head, Link, useForm } from '@inertiajs/react';
 
 export default function VerifyEmail({ status }) {
+    const { t } = useI18n();
     const { post, processing } = useForm({});
 
     const submit = (e) => {
@@ -13,26 +15,22 @@ export default function VerifyEmail({ status }) {
 
     return (
         <GuestLayout>
-            <Head title="Email Verification" />
+            <Head title={t('auth.verifyTitle')} />
 
             <div className="mb-4 text-sm text-gray-600">
-                Thanks for signing up! Before getting started, could you verify
-                your email address by clicking on the link we just emailed to
-                you? If you didn't receive the email, we will gladly send you
-                another.
+                {t('auth.verifyText')}
             </div>
 
             {status === 'verification-link-sent' && (
                 <div className="mb-4 text-sm font-medium text-green-600">
-                    A new verification link has been sent to the email address
-                    you provided during registration.
+                    {t('auth.verifySent')}
                 </div>
             )}
 
             <form onSubmit={submit}>
                 <div className="mt-4 flex items-center justify-between">
                     <PrimaryButton disabled={processing}>
-                        Resend Verification Email
+                        {t('auth.resendVerification')}
                     </PrimaryButton>
 
                     <Link
@@ -41,7 +39,7 @@ export default function VerifyEmail({ status }) {
                         as="button"
                         className="rounded-md text-sm text-[#355da8] underline hover:text-[#274f93] focus:outline-none focus:ring-2 focus:ring-[#355da8] focus:ring-offset-2"
                     >
-                        Log Out
+                        {t('nav.logout')}
                     </Link>
                 </div>
             </form>

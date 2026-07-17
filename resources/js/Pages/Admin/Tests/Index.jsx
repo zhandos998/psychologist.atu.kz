@@ -1,14 +1,10 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { translateType, useI18n } from '@/lib/i18n';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 
-const typeLabels = {
-    psychology: 'Психология',
-    social_survey: 'Социальная анкета',
-    mood_meter: 'Настроение',
-};
-
 export default function Index({ tests, filters }) {
+    const { t } = useI18n();
     const { flash } = usePage().props;
     const [search, setSearch] = useState(filters.search || '');
     const [type, setType] = useState(filters.type || '');
@@ -27,18 +23,18 @@ export default function Index({ tests, filters }) {
             header={
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <h2 className="text-xl font-semibold leading-tight text-[#274f93]">
-                        Конструктор тестов
+                        {t('admin.tests.title')}
                     </h2>
                     <Link
                         href={route('admin.tests.create')}
                         className="atu-primary"
                     >
-                        Создать тест
+                        {t('admin.tests.create')}
                     </Link>
                 </div>
             }
         >
-            <Head title="Конструктор тестов" />
+            <Head title={t('admin.tests.title')} />
 
             <div className="atu-page">
                 <div className="mx-auto max-w-7xl space-y-5 px-4 sm:px-6 lg:px-8">
@@ -55,7 +51,7 @@ export default function Index({ tests, filters }) {
                         <input
                             value={search}
                             onChange={(event) => setSearch(event.target.value)}
-                            placeholder="Поиск"
+                            placeholder={t('common.search')}
                             className="atu-input"
                         />
                         <select
@@ -63,15 +59,17 @@ export default function Index({ tests, filters }) {
                             onChange={(event) => setType(event.target.value)}
                             className="atu-input"
                         >
-                            <option value="">Все типы</option>
-                            {Object.entries(typeLabels).map(([value, label]) => (
-                                <option key={value} value={value}>
-                                    {label}
-                                </option>
-                            ))}
+                            <option value="">{t('common.allTypes')}</option>
+                            {['psychology', 'social_survey'].map(
+                                (value) => (
+                                    <option key={value} value={value}>
+                                        {translateType(t, value, true)}
+                                    </option>
+                                ),
+                            )}
                         </select>
                         <button className="atu-secondary">
-                            Фильтр
+                            {t('common.filter')}
                         </button>
                     </form>
 
@@ -81,21 +79,23 @@ export default function Index({ tests, filters }) {
                                 <thead className="atu-table-head">
                                     <tr>
                                         <th className="px-4 py-3 font-medium">
-                                            Название
+                                            {t('admin.tests.name')}
                                         </th>
                                         <th className="px-4 py-3 font-medium">
-                                            Тип
+                                            {t('admin.tests.type')}
                                         </th>
                                         <th className="px-4 py-3 font-medium">
-                                            Вопросы
+                                            {t('admin.tests.scoringMethod')}
                                         </th>
                                         <th className="px-4 py-3 font-medium">
-                                            Попытки
+                                            {t('admin.tests.questions')}
                                         </th>
                                         <th className="px-4 py-3 font-medium">
-                                            Статус
+                                            {t('admin.tests.attempts')}
                                         </th>
-                                        <th className="px-4 py-3" />
+                                        <th className="px-4 py-3 font-medium">
+                                            {t('admin.tests.status')}
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
@@ -106,11 +106,25 @@ export default function Index({ tests, filters }) {
                                                     {test.title}
                                                 </div>
                                                 <div className="text-xs text-gray-500">
-                                                    {test.category || 'Без категории'}
+                                                    {test.category ||
+                                                        t(
+                                                            'common.noCategory',
+                                                        )}
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3 text-gray-700">
-                                                {typeLabels[test.type] || test.type}
+                                                {translateType(
+                                                    t,
+                                                    test.type,
+                                                    true,
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-3 text-gray-700">
+                                                <span className="rounded-md bg-[#edf3ff] px-2 py-1 text-xs font-medium text-[#274f93]">
+                                                    {t(
+                                                        `scoring.${test.scoring_rule?.method || 'simple_sum'}`,
+                                                    )}
+                                                </span>
                                             </td>
                                             <td className="px-4 py-3 text-gray-700">
                                                 {test.questions_count}
@@ -128,20 +142,9 @@ export default function Index({ tests, filters }) {
                                                     }
                                                 >
                                                     {test.is_active
-                                                        ? 'Активен'
-                                                        : 'Выключен'}
+                                                        ? t('common.active')
+                                                        : t('common.inactive')}
                                                 </span>
-                                            </td>
-                                            <td className="px-4 py-3 text-right">
-                                                <Link
-                                                    href={route(
-                                                        'admin.tests.edit',
-                                                        test.id,
-                                                    )}
-                                                    className="font-medium text-[#355da8] hover:text-[#274f93]"
-                                                >
-                                                    Изменить
-                                                </Link>
                                             </td>
                                         </tr>
                                     ))}

@@ -18,7 +18,7 @@ class TestController extends Controller
         $tests = Test::query()
             ->with('scoringRule')
             ->withCount(['questions', 'attempts'])
-            ->whereIn('type', ['psychology', 'social_survey', 'mood_meter'])
+            ->whereIn('type', ['psychology', 'social_survey'])
             ->when($request->filled('type'), fn ($query) => $query->where('type', $request->string('type')))
             ->when($request->filled('search'), fn ($query) => $query->where('title', 'like', '%'.$request->string('search').'%'))
             ->latest()
@@ -54,7 +54,7 @@ class TestController extends Controller
             return $test;
         });
 
-        return redirect()->route('admin.tests.edit', $test)->with('status', 'Тест создан.');
+        return redirect()->route('admin.tests.index')->with('status', $this->statusMessage('created'));
     }
 
     public function edit(Test $test)
@@ -82,14 +82,14 @@ class TestController extends Controller
             $this->syncInterpretations($test, $data['interpretations'] ?? []);
         });
 
-        return redirect()->route('admin.tests.edit', $test)->with('status', 'Тест обновлен.');
+        return redirect()->route('admin.tests.edit', $test)->with('status', $this->statusMessage('updated'));
     }
 
     public function destroy(Test $test)
     {
         $test->delete();
 
-        return redirect()->route('admin.tests.index')->with('status', 'Тест удален.');
+        return redirect()->route('admin.tests.index')->with('status', $this->statusMessage('deleted'));
     }
 
     private function validatedData(Request $request): array
@@ -97,7 +97,7 @@ class TestController extends Controller
         return $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'type' => ['required', Rule::in(['psychology', 'social_survey', 'mood_meter'])],
+            'type' => ['required', Rule::in(['psychology', 'social_survey'])],
             'category' => ['nullable', 'string', 'max:255'],
             'is_required' => ['boolean'],
             'is_active' => ['boolean'],
@@ -107,7 +107,6 @@ class TestController extends Controller
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
             'scoring_method' => ['required', Rule::in([
                 'simple_sum',
-                'reverse_questions',
                 'scale_based',
                 'max_match_type',
                 'trait_matrix_type',
@@ -118,7 +117,7 @@ class TestController extends Controller
             'questions' => ['array'],
             'questions.*.id' => ['nullable', 'integer'],
             'questions.*.text' => ['required_with:questions', 'string'],
-            'questions.*.type' => ['required_with:questions', Rule::in(['single_choice', 'multiple_choice', 'scale', 'text', 'mood'])],
+            'questions.*.type' => ['required_with:questions', Rule::in(['single_choice', 'multiple_choice', 'scale', 'text'])],
             'questions.*.order' => ['nullable', 'integer', 'min:0'],
             'questions.*.is_required' => ['boolean'],
             'questions.*.scale_name' => ['nullable', 'string', 'max:255'],
@@ -246,5 +245,23 @@ class TestController extends Controller
             ->when($keptIds, fn ($query) => $query->whereNotIn('id', $keptIds))
             ->when(! $keptIds, fn ($query) => $query)
             ->delete();
+    }
+
+    private function statusMessage(string $key): string
+    {
+        $messages = [
+            'ru' => [
+                'created' => 'Тест создан.',
+                'updated' => 'Тест обновлен.',
+                'deleted' => 'Тест удален.',
+            ],
+            'kk' => [
+                'created' => 'Тест құрылды.',
+                'updated' => 'Тест жаңартылды.',
+                'deleted' => 'Тест жойылды.',
+            ],
+        ];
+
+        return $messages[app()->getLocale()][$key] ?? $messages['ru'][$key];
     }
 }

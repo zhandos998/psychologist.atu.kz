@@ -3,12 +3,15 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import GuestLayout from '@/Layouts/GuestLayout';
+import { useI18n } from '@/lib/i18n';
 import { Head, Link, useForm } from '@inertiajs/react';
 
 export default function Register() {
+    const { t } = useI18n();
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
         email: '',
+        iin: '',
         password: '',
         password_confirmation: '',
     });
@@ -23,11 +26,11 @@ export default function Register() {
 
     return (
         <GuestLayout>
-            <Head title="Register" />
+            <Head title={t('auth.registerTitle')} />
 
             <form onSubmit={submit}>
                 <div>
-                    <InputLabel htmlFor="name" value="Name" />
+                    <InputLabel htmlFor="name" value={t('auth.name')} />
 
                     <TextInput
                         id="name"
@@ -44,7 +47,7 @@ export default function Register() {
                 </div>
 
                 <div className="mt-4">
-                    <InputLabel htmlFor="email" value="Email" />
+                    <InputLabel htmlFor="email" value={t('auth.email')} />
 
                     <TextInput
                         id="email"
@@ -61,7 +64,31 @@ export default function Register() {
                 </div>
 
                 <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Password" />
+                    <InputLabel htmlFor="iin" value={t('auth.iin')} />
+
+                    <TextInput
+                        id="iin"
+                        name="iin"
+                        value={data.iin}
+                        className="mt-1 block w-full"
+                        autoComplete="off"
+                        inputMode="numeric"
+                        maxLength={12}
+                        pattern="[0-9]{12}"
+                        onChange={(e) =>
+                            setData(
+                                'iin',
+                                e.target.value.replace(/\D/g, '').slice(0, 12),
+                            )
+                        }
+                        required
+                    />
+
+                    <InputError message={errors.iin} className="mt-2" />
+                </div>
+
+                <div className="mt-4">
+                    <InputLabel htmlFor="password" value={t('auth.password')} />
 
                     <TextInput
                         id="password"
@@ -80,7 +107,7 @@ export default function Register() {
                 <div className="mt-4">
                     <InputLabel
                         htmlFor="password_confirmation"
-                        value="Confirm Password"
+                        value={t('auth.confirmPassword')}
                     />
 
                     <TextInput
@@ -107,11 +134,11 @@ export default function Register() {
                         href={route('login')}
                         className="rounded-md text-sm text-[#355da8] underline hover:text-[#274f93] focus:outline-none focus:ring-2 focus:ring-[#355da8] focus:ring-offset-2"
                     >
-                        Already registered?
+                        {t('auth.alreadyRegistered')}
                     </Link>
 
                     <PrimaryButton className="ms-4" disabled={processing}>
-                        Register
+                        {t('auth.register')}
                     </PrimaryButton>
                 </div>
             </form>

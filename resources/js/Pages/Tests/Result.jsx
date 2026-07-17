@@ -1,18 +1,20 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { useI18n } from '@/lib/i18n';
 import { Head, Link } from '@inertiajs/react';
 
 export default function Result({ attempt }) {
+    const { t } = useI18n();
     const result = attempt.result_json || {};
 
     return (
         <AuthenticatedLayout
             header={
                 <h2 className="text-xl font-semibold leading-tight text-[#274f93]">
-                    Результат
+                    {t('result.title')}
                 </h2>
             }
         >
-            <Head title="Результат" />
+            <Head title={t('result.title')} />
 
             <div className="atu-page">
                 <div className="mx-auto max-w-4xl space-y-6 px-4 sm:px-6 lg:px-8">
@@ -22,9 +24,11 @@ export default function Result({ attempt }) {
                         </div>
                         <div className="mt-2 flex flex-wrap items-end gap-4">
                             <div>
-                                <div className="text-sm text-gray-500">Балл</div>
+                                <div className="text-sm text-gray-500">
+                                    {t('common.score')}
+                                </div>
                                 <div className="text-4xl font-semibold text-[#274f93]">
-                                    {attempt.total_score ?? '—'}
+                                    {attempt.total_score ?? t('common.dash')}
                                 </div>
                             </div>
                             <span
@@ -36,15 +40,17 @@ export default function Result({ attempt }) {
                                 }
                             >
                                 {attempt.is_high_risk
-                                    ? 'Высокий риск'
-                                    : 'Без высокого риска'}
+                                    ? t('result.highRisk')
+                                    : t('result.noHighRisk')}
                             </span>
                         </div>
                         {result.matched_type && (
                             <div className="mt-4 rounded-lg border border-[#dbe5f6] bg-[#f4f7fc] p-4 text-sm">
-                                <span className="text-gray-500">Итоговый тип: </span>
+                                <span className="text-gray-500">
+                                    {t('result.finalType')}:{' '}
+                                </span>
                                 <span className="font-semibold text-[#274f93]">
-                                    {result.matched_type}
+                                    {result.matched_label || result.matched_type}
                                 </span>
                                 {result.interpretation && (
                                     <TextInterpretation
@@ -56,16 +62,18 @@ export default function Result({ attempt }) {
 
                         {attempt.is_high_risk && (
                             <div className="mt-5 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-                                Рекомендуется обратиться в СПП.
+                                {t('result.sppRecommendation')}
                             </div>
                         )}
                     </section>
 
-                    <Interpretation result={result} />
+                    <Interpretation result={result} t={t} />
 
                     {attempt.answers.length > 0 && (
                         <section className="atu-panel p-6">
-                            <h3 className="font-semibold text-[#274f93]">Ответы</h3>
+                            <h3 className="font-semibold text-[#274f93]">
+                                {t('result.answers')}
+                            </h3>
                             <div className="mt-4 divide-y divide-gray-100">
                                 {attempt.answers.map((answer) => (
                                     <div key={answer.id} className="py-3">
@@ -75,7 +83,7 @@ export default function Result({ attempt }) {
                                         <div className="mt-1 text-sm text-gray-600">
                                             {answer.option?.text ||
                                                 answer.text_answer ||
-                                                '—'}
+                                                t('common.dash')}
                                         </div>
                                     </div>
                                 ))}
@@ -87,7 +95,7 @@ export default function Result({ attempt }) {
                         href={route('tests.index')}
                         className="atu-secondary"
                     >
-                        К тестам
+                        {t('result.toTests')}
                     </Link>
                 </div>
             </div>
@@ -95,18 +103,25 @@ export default function Result({ attempt }) {
     );
 }
 
-function Interpretation({ result }) {
+function Interpretation({ result, t }) {
     if (result.scales) {
         return (
             <section className="atu-panel p-6">
-                <h3 className="font-semibold text-[#274f93]">Шкалы</h3>
+                <h3 className="font-semibold text-[#274f93]">
+                    {t('result.scales')}
+                </h3>
                 <div className="mt-4 grid gap-4 md:grid-cols-2">
                     {Object.entries(result.scales).map(([scale, data]) => (
                         <div
                             key={scale}
                             className="rounded-md border border-[#dbe5f6] bg-[#f4f7fc] p-4"
                         >
-                            <div className="text-sm text-gray-500">{scale}</div>
+                            <div className="text-sm text-gray-500">
+                                {data.label ||
+                                    data.interpretation?.scale_label ||
+                                    data.interpretation?.scale_name ||
+                                    scale}
+                            </div>
                             <div className="mt-1 text-2xl font-semibold text-[#274f93]">
                                 {data.score}
                             </div>
@@ -134,7 +149,7 @@ function Interpretation({ result }) {
         return (
             <section className="atu-panel p-6">
                 <h3 className="font-semibold text-[#274f93]">
-                    Тип: {result.matched_type}
+                    {result.matched_type}
                 </h3>
             </section>
         );
@@ -153,7 +168,7 @@ function TextInterpretation({ interpretation }) {
                 <p className="text-gray-600">{interpretation.description}</p>
             )}
             {interpretation.recommendation && (
-                <p className="font-medium text-gray-800">
+                <p className="whitespace-pre-line font-medium text-gray-800">
                     {interpretation.recommendation}
                 </p>
             )}

@@ -36,7 +36,14 @@ class TestAttemptController extends Controller
                 ->where('status', 'completed')
                 ->latest('finished_at')
                 ->take(3)
-                ->get(),
+                ->get(['id', 'finished_at'])
+                ->map(fn (TestAttempt $attempt) => [
+                    'id' => $attempt->id,
+                    'finished_at' => $attempt->finished_at?->toIso8601String(),
+                    'finished_at_label' => $attempt->finished_at
+                        ?->timezone(config('app.timezone'))
+                        ->format('d.m.Y H:i'),
+                ]),
         ]);
     }
 
@@ -79,7 +86,7 @@ class TestAttemptController extends Controller
             403
         );
 
-        $attempt->load('test', 'answers.question', 'answers.option', 'user');
+        $attempt->load('test.interpretations', 'test.scoringRule', 'answers.question', 'answers.option', 'user');
         $localizer->attempt($attempt);
 
         return Inertia::render('Tests/Result', [
@@ -96,7 +103,7 @@ class TestAttemptController extends Controller
             $empty = is_array($answer) ? count(array_filter($answer)) === 0 : blank($answer);
 
             if ($question->is_required && $empty) {
-                $errors["answers.{$question->id}"] = 'Ответ обязателен.';
+                $errors["answers.{$question->id}"] = $this->validationMessage('required');
                 continue;
             }
 
@@ -104,11 +111,11 @@ class TestAttemptController extends Controller
                 continue;
             }
 
-            if (in_array($question->type, ['single_choice', 'scale', 'mood'], true)) {
+            if (in_array($question->type, ['single_choice', 'scale'], true)) {
                 $exists = $question->options->contains('id', (int) $answer);
 
                 if (! $exists) {
-                    $errors["answers.{$question->id}"] = 'Выбран недопустимый вариант.';
+                    $errors["answers.{$question->id}"] = $this->validationMessage('invalid_option');
                 }
             }
 
@@ -117,7 +124,7 @@ class TestAttemptController extends Controller
                 $valid = $question->options->pluck('id')->intersect($selected)->count() === count($selected);
 
                 if (! $valid) {
-                    $errors["answers.{$question->id}"] = 'Выбраны недопустимые варианты.';
+                    $errors["answers.{$question->id}"] = $this->validationMessage('invalid_options');
                 }
             }
         }
@@ -160,5 +167,23 @@ class TestAttemptController extends Controller
                 'value' => $option->value,
             ]);
         }
+    }
+
+    private function validationMessage(string $key): string
+    {
+        $messages = [
+            'ru' => [
+                'required' => 'Ответ обязателен.',
+                'invalid_option' => 'Выбран недопустимый вариант.',
+                'invalid_options' => 'Выбраны недопустимые варианты.',
+            ],
+            'kk' => [
+                'required' => 'Жауап міндетті.',
+                'invalid_option' => 'Жарамсыз нұсқа таңдалды.',
+                'invalid_options' => 'Жарамсыз нұсқалар таңдалды.',
+            ],
+        ];
+
+        return $messages[app()->getLocale()][$key] ?? $messages['ru'][$key];
     }
 }

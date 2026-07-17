@@ -1,8 +1,12 @@
 import InputError from '@/Components/InputError';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { formatDateTime } from '@/lib/dates';
+import { translateType, useI18n } from '@/lib/i18n';
 import { Head, Link, useForm } from '@inertiajs/react';
 
 export default function Show({ testItem, previousAttempts }) {
+    const { locale, t } = useI18n();
+    const groups = questionGroups(testItem.questions);
     const { data, setData, post, processing, errors } = useForm({
         answers: {},
     });
@@ -25,7 +29,7 @@ export default function Show({ testItem, previousAttempts }) {
                         href={route('tests.index')}
                         className="text-sm font-medium text-[#355da8] hover:text-[#274f93]"
                     >
-                        Назад к списку
+                        {t('tests.back')}
                     </Link>
                 </div>
             }
@@ -36,9 +40,13 @@ export default function Show({ testItem, previousAttempts }) {
                 <div className="mx-auto max-w-4xl space-y-6 px-4 sm:px-6 lg:px-8">
                     <section className="atu-panel p-6">
                         <div className="flex flex-wrap gap-2 text-xs font-medium text-[#355da8]">
-                            <span>{testItem.type}</span>
-                            {testItem.category && <span>· {testItem.category}</span>}
-                            {testItem.is_required && <span>· обязательный</span>}
+                            <span>{translateType(t, testItem.type)}</span>
+                            {testItem.category && (
+                                <span>· {testItem.category}</span>
+                            )}
+                            {testItem.is_required && (
+                                <span>· {t('common.required')}</span>
+                            )}
                         </div>
                         {testItem.description && (
                             <p className="mt-3 text-sm leading-6 text-gray-700">
@@ -50,7 +58,7 @@ export default function Show({ testItem, previousAttempts }) {
                     {previousAttempts.length > 0 && (
                         <section className="atu-panel p-6">
                             <h3 className="font-semibold text-[#274f93]">
-                                Последние прохождения
+                                {t('tests.previousAttempts')}
                             </h3>
                             <div className="mt-3 divide-y divide-gray-100 text-sm">
                                 {previousAttempts.map((attempt) => (
@@ -59,13 +67,20 @@ export default function Show({ testItem, previousAttempts }) {
                                         className="flex items-center justify-between py-3"
                                     >
                                         <span className="text-gray-600">
-                                            {attempt.finished_at}
+                                            {attempt.finished_at_label ||
+                                                formatDateTime(
+                                                    attempt.finished_at,
+                                                    locale,
+                                                )}
                                         </span>
                                         <Link
-                                            href={route('attempts.show', attempt.id)}
+                                            href={route(
+                                                'attempts.show',
+                                                attempt.id,
+                                            )}
                                             className="font-medium text-[#355da8] hover:text-[#274f93]"
                                         >
-                                            Результат
+                                            {t('tests.result')}
                                         </Link>
                                     </div>
                                 ))}
@@ -74,26 +89,37 @@ export default function Show({ testItem, previousAttempts }) {
                     )}
 
                     <form onSubmit={submit} className="space-y-4">
-                        {testItem.questions.map((question, index) => (
-                            <QuestionBlock
-                                key={question.id}
-                                question={question}
-                                index={index}
-                                value={data.answers[question.id]}
-                                setValue={(value) =>
-                                    setData('answers', {
-                                        ...data.answers,
-                                        [question.id]: value,
-                                    })
-                                }
-                                error={errors[`answers.${question.id}`]}
-                            />
+                        {groups.map((group) => (
+                            <div key={group.name || 'general'} className="space-y-4">
+                                {group.name && groups.length > 1 && (
+                                    <div className="rounded-md border border-[#dbe5f6] bg-[#edf3ff] px-4 py-3">
+                                        <h3 className="font-semibold text-[#274f93]">
+                                            {group.name}
+                                        </h3>
+                                    </div>
+                                )}
+
+                                {group.questions.map((question) => (
+                                    <QuestionBlock
+                                        key={question.id}
+                                        question={question}
+                                        value={data.answers[question.id]}
+                                        setValue={(value) =>
+                                            setData('answers', {
+                                                ...data.answers,
+                                                [question.id]: value,
+                                            })
+                                        }
+                                        error={errors[`answers.${question.id}`]}
+                                    />
+                                ))}
+                            </div>
                         ))}
 
                         {testItem.questions.length === 0 && (
                             <section className="atu-panel p-6">
                                 <p className="text-sm text-gray-600">
-                                    Для этого материала нужно подтвердить просмотр.
+                                    {t('tests.emptyVideo')}
                                 </p>
                             </section>
                         )}
@@ -104,7 +130,9 @@ export default function Show({ testItem, previousAttempts }) {
                                 disabled={processing}
                                 className="atu-primary px-5 py-2.5 disabled:opacity-50"
                             >
-                                {processing ? 'Сохранение...' : 'Завершить'}
+                                {processing
+                                    ? t('tests.saving')
+                                    : t('tests.finish')}
                             </button>
                         </div>
                     </form>
@@ -114,29 +142,39 @@ export default function Show({ testItem, previousAttempts }) {
     );
 }
 
-function QuestionBlock({ question, index, value, setValue, error }) {
+function questionGroups(questions) {
+    return questions.reduce((groups, question) => {
+        const name = question.scale_label || question.scale_name || null;
+        const lastGroup = groups[groups.length - 1];
+
+        if (!lastGroup || lastGroup.name !== name) {
+            groups.push({ name, questions: [] });
+        }
+
+        groups[groups.length - 1].questions.push(question);
+
+        return groups;
+    }, []);
+}
+
+function QuestionBlock({ question, value, setValue, error }) {
     return (
         <section className="atu-panel p-6">
-            <div className="flex gap-3">
-                <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#edf3ff] text-sm font-semibold text-[#274f93]">
-                    {index + 1}
-                </span>
-                <div className="min-w-0 flex-1">
-                    <div className="font-medium text-[#274f93]">
-                        {question.text}
-                        {question.is_required && (
-                            <span className="text-red-600"> *</span>
-                        )}
-                    </div>
-                    <div className="mt-4">
-                        <QuestionInput
-                            question={question}
-                            value={value}
-                            setValue={setValue}
-                        />
-                    </div>
-                    <InputError message={error} className="mt-2" />
+            <div className="min-w-0">
+                <div className="font-medium text-[#274f93]">
+                    {question.text}
+                    {question.is_required && (
+                        <span className="text-red-600"> *</span>
+                    )}
                 </div>
+                <div className="mt-4">
+                    <QuestionInput
+                        question={question}
+                        value={value}
+                        setValue={setValue}
+                    />
+                </div>
+                <InputError message={error} className="mt-2" />
             </div>
         </section>
     );
@@ -170,7 +208,9 @@ function QuestionInput({ question, value, setValue }) {
                             onChange={() =>
                                 setValue(
                                     selected.includes(option.id)
-                                        ? selected.filter((id) => id !== option.id)
+                                        ? selected.filter(
+                                              (id) => id !== option.id,
+                                          )
                                         : [...selected, option.id],
                                 )
                             }
@@ -184,13 +224,7 @@ function QuestionInput({ question, value, setValue }) {
     }
 
     return (
-        <div
-            className={
-                question.type === 'mood' || question.type === 'scale'
-                    ? 'grid gap-2 sm:grid-cols-5'
-                    : 'space-y-2'
-            }
-        >
+        <div className="space-y-2">
             {question.options.map((option) => (
                 <label
                     key={option.id}
@@ -214,4 +248,17 @@ function QuestionInput({ question, value, setValue }) {
             ))}
         </div>
     );
+}
+
+function splitScaleOption(text) {
+    const match = String(text || '').match(/^\s*(\d+)\s*[-–—]\s*(.+)$/);
+
+    if (!match) {
+        return { number: null, label: text };
+    }
+
+    return {
+        number: match[1],
+        label: match[2],
+    };
 }

@@ -2,11 +2,15 @@ import ApplicationLogo from '@/Components/ApplicationLogo';
 import Dropdown from '@/Components/Dropdown';
 import NavLink from '@/Components/NavLink';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
-import { Link, usePage } from '@inertiajs/react';
+import { useI18n } from '@/lib/i18n';
+import { Link, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 
 export default function AuthenticatedLayout({ header, children }) {
-    const user = usePage().props.auth.user;
+    const { locale, t } = useI18n();
+    const page = usePage();
+    const user = page.props.auth.user;
+    const flash = page.props.flash || {};
     const canManageTests = ['admin', 'psychologist'].includes(user.role);
     const canViewResults = ['admin', 'psychologist', 'ddm_staff'].includes(
         user.role,
@@ -36,13 +40,13 @@ export default function AuthenticatedLayout({ header, children }) {
                                     href={route('dashboard')}
                                     active={route().current('dashboard')}
                                 >
-                                    Панель
+                                    {t('nav.dashboard')}
                                 </NavLink>
                                 <NavLink
                                     href={route('tests.index')}
                                     active={route().current('tests.*')}
                                 >
-                                    Тесты
+                                    {t('nav.tests')}
                                 </NavLink>
                                 {canManageTests && (
                                     <NavLink
@@ -51,7 +55,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                             'admin.tests.*',
                                         )}
                                     >
-                                        Конструктор
+                                        {t('nav.builder')}
                                     </NavLink>
                                 )}
                                 {canViewResults && (
@@ -61,13 +65,15 @@ export default function AuthenticatedLayout({ header, children }) {
                                             'admin.results.*',
                                         )}
                                     >
-                                        Результаты
+                                        {t('nav.results')}
                                     </NavLink>
                                 )}
                             </div>
                         </div>
 
-                        <div className="hidden sm:ms-6 sm:flex sm:items-center">
+                        <div className="hidden sm:ms-6 sm:flex sm:items-center sm:gap-3">
+                            <LanguageSwitcher locale={locale} />
+
                             <div className="relative ms-3">
                                 <Dropdown>
                                     <Dropdown.Trigger>
@@ -98,14 +104,14 @@ export default function AuthenticatedLayout({ header, children }) {
                                         <Dropdown.Link
                                             href={route('profile.edit')}
                                         >
-                                            Профиль
+                                            {t('nav.profile')}
                                         </Dropdown.Link>
                                         <Dropdown.Link
                                             href={route('logout')}
                                             method="post"
                                             as="button"
                                         >
-                                            Выйти
+                                            {t('nav.logout')}
                                         </Dropdown.Link>
                                     </Dropdown.Content>
                                 </Dropdown>
@@ -166,20 +172,20 @@ export default function AuthenticatedLayout({ header, children }) {
                             href={route('dashboard')}
                             active={route().current('dashboard')}
                         >
-                            Панель
+                            {t('nav.dashboard')}
                         </ResponsiveNavLink>
                         <ResponsiveNavLink
                             href={route('tests.index')}
                             active={route().current('tests.*')}
                         >
-                            Тесты
+                            {t('nav.tests')}
                         </ResponsiveNavLink>
                         {canManageTests && (
                             <ResponsiveNavLink
                                 href={route('admin.tests.index')}
                                 active={route().current('admin.tests.*')}
                             >
-                                Конструктор
+                                {t('nav.builder')}
                             </ResponsiveNavLink>
                         )}
                         {canViewResults && (
@@ -187,7 +193,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                 href={route('admin.results.index')}
                                 active={route().current('admin.results.*')}
                             >
-                                Результаты
+                                {t('nav.results')}
                             </ResponsiveNavLink>
                         )}
                     </div>
@@ -203,15 +209,18 @@ export default function AuthenticatedLayout({ header, children }) {
                         </div>
 
                         <div className="mt-3 space-y-1">
+                            <div className="px-4 pb-2">
+                                <LanguageSwitcher locale={locale} />
+                            </div>
                             <ResponsiveNavLink href={route('profile.edit')}>
-                                Профиль
+                                {t('nav.profile')}
                             </ResponsiveNavLink>
                             <ResponsiveNavLink
                                 method="post"
                                 href={route('logout')}
                                 as="button"
                             >
-                                Выйти
+                                {t('nav.logout')}
                             </ResponsiveNavLink>
                         </div>
                     </div>
@@ -226,7 +235,51 @@ export default function AuthenticatedLayout({ header, children }) {
                 </header>
             )}
 
+            {flash.error && (
+                <div className="mx-auto mt-6 max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
+                        {flash.error}
+                    </div>
+                </div>
+            )}
+
             <main>{children}</main>
+        </div>
+    );
+}
+
+function LanguageSwitcher({ locale }) {
+    const switchLocale = (nextLocale) => {
+        if (nextLocale === locale) {
+            return;
+        }
+
+        router.post(
+            route('locale.switch', nextLocale),
+            {},
+            {
+                preserveScroll: true,
+            },
+        );
+    };
+
+    return (
+        <div className="inline-flex rounded-md border border-[#dbe5f6] bg-white p-1 shadow-sm">
+            {['ru', 'kk'].map((item) => (
+                <button
+                    key={item}
+                    type="button"
+                    onClick={() => switchLocale(item)}
+                    className={
+                        'rounded px-2.5 py-1 text-xs font-semibold transition ' +
+                        (locale === item
+                            ? 'bg-[#355da8] text-white'
+                            : 'text-[#355da8] hover:bg-[#f4f7fc]')
+                    }
+                >
+                    {item === 'ru' ? 'RU' : 'KZ'}
+                </button>
+            ))}
         </div>
     );
 }
