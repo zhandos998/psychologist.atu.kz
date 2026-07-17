@@ -9,6 +9,7 @@ RUN npm ci --no-audit --no-fund
 COPY resources ./resources
 COPY public ./public
 COPY vite.config.js ./
+COPY postcss.config.js tailwind.config.js ./
 RUN npm run build
 
 FROM ${PHP_BASE_IMAGE} AS app
